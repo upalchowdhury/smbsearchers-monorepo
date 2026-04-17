@@ -1,0 +1,10 @@
+# Railway config for scraper service
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "python run.py --source all --pages 20"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

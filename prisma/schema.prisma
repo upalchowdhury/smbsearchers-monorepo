@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// SOURCE TRACKING
+// ============================================================
+
+model Source {
+  id                     String     @id @default(cuid())
+  name                   String     @unique
+  baseUrl                String
+  isActive               Boolean    @default(true)
+  lastScraped            DateTime?
+  scrapeFrequencyMinutes Int        @default(360)
+  config                 Json?
+  listings               Listing[]
+  scrapeRuns             ScrapeRun[]
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+}
+
+model ScrapeRun {
+  id              String       @id @default(cuid())
+  sourceId        String
+  source          Source       @relation(fields: [sourceId], references: [id])
+  status          ScrapeStatus @default(PENDING)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  listingsFound   Int          @default(0)
+  listingsNew     Int          @default(0)
+  listingsUpdated Int          @default(0)
+  errorMessage    String?
+  createdAt       DateTime     @default(now())
+}
+
+enum ScrapeStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ============================================================
+// LISTINGS (CORE)
+// ============================================================
+
+model Listing {
+  id              String        @id @default(cuid())
+
+  // Source tracking
+  sourceId        String
+  source          Source        @relation(fields: [sourceId], references: [id])
+  sourceListingId String
+  sourceUrl       String
+
+  @@unique([sourceId, sourceListingId])
+
+  // Deduplication
+  canonicalId String?
+  canonical   Listing?  @relation("duplicates", fields: [canonicalId], references: [id])
+  duplicates  Listing[] @relation("duplicates")
+  dedupeHash  String?
+
+  // Business info
+  title            String
+  description      String?   @db.Text
+  descriptionClean String?   @db.Text
+
+  // Classification
+  industry           String?
+  industryNormalized String?
+  businessType       String?
+
+  // Financials (stored as cents)
+  askingPrice    BigInt?
+  askingPriceRaw String?
+  revenue        BigInt?
+  revenueRaw     String?
+  cashFlow       BigInt?
+  cashFlowRaw    String?
+  cashFlowType   String?
+  inventory      BigInt?
+  ffe            BigInt?
+  realEstate     BigInt?
+  multiple       Float?
+
+  // Location
+  city      String?
+  state     String?
+  stateCode String?
+  country   String  @default("US")
+  zipCode   String?
+  metroArea String?
+  latitude  Float?
+  longitude Float?
+
+  // Broker/Seller info
+  brokerName      String?
+  brokerCompany   String?
+  brokerPhone     String?
+  brokerEmail     String?
+  sellerFinancing Boolean?
+
+  // Metadata
+  yearEstablished Int?
+  employees       Int?
+  isAbsenteeOwner Boolean?
+  isFranchise     Boolean?
+  isHomeBased     Boolean?
+  hasRealEstate   Boolean?
+  reasonForSelling String?
+
+  // Status
+  status          ListingStatus @default(ACTIVE)
+  firstSeenAt     DateTime      @default(now())
+  lastSeenAt      DateTime      @default(now())
+  priceChangedAt  DateTime?
+  previousPrice   BigInt?
+  daysOnMarket    Int?
+
+  // Relations
+  savedBy      SavedListing[]
+  alertMatches AlertMatch[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([industryNormalized])
+  @@index([stateCode])
+  @@index([status])
+  @@index([askingPrice])
+  @@index([cashFlow])
+  @@index([revenue])
+  @@index([createdAt])
+  @@index([dedupeHash])
+  @@index([canonicalId])
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  UNDER_CONTRACT
+  DELISTED
+  EXPIRED
+}
+
+// ============================================================
+// USER & PERSONALIZATION
+// ============================================================
+
+model User {
+  id               String         @id @default(cuid())
+  email            String         @unique
+  name             String?
+  passwordHash     String?
+  image            String?
+  plan             Plan           @default(FREE)
+  stripeCustomerId String?
+  savedListings    SavedListing[]
+  savedSearches    SavedSearch[]
+  alerts           Alert[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+}
+
+model SavedListing {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  notes     String?  @db.Text
+  status    String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+}
+
+model SavedSearch {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  name           String
+  filters        Json
+  alertEnabled   Boolean        @default(false)
+  alertFrequency AlertFrequency @default(DAILY)
+  lastAlertedAt  DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+enum AlertFrequency {
+  REAL_TIME
+  DAILY
+  WEEKLY
+}
+
+model Alert {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  savedSearchId String
+  sentAt        DateTime     @default(now())
+  channel       String       @default("email")
+  matches       AlertMatch[]
+}
+
+model AlertMatch {
+  id        String  @id @default(cuid())
+  alertId   String
+  alert     Alert   @relation(fields: [alertId], references: [id])
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id])
+}

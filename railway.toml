@@ -1,0 +1,26 @@
+# Railway deployment config
+# https://docs.railway.app/reference/config-as-code
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "node server.js"
+numReplicas = 1
+sleepApplication = false
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+
+# Environment variable handling
+# Set these in Railway dashboard:
+# DATABASE_URL (from Railway PostgreSQL plugin)
+# REDIS_URL (from Railway Redis plugin)
+# NEXTAUTH_SECRET
+# NEXTAUTH_URL
+
+# This file is intended for the web service.
+# Create a separate Railway service for the worker using:
+#   Start Command: npx tsx src/jobs/worker-entry.ts

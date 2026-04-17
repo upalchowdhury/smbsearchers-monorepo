@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  nightly_scrape.plist — macOS launchd job for nightly BBS scraper
+  =================================================================
+  Install (run once):
+    cp /Users/uc/Documents/smbsearchers/scraper/nightly_scrape.plist \
+       ~/Library/LaunchAgents/com.smbsearchers.nightly.plist
+    launchctl load ~/Library/LaunchAgents/com.smbsearchers.nightly.plist
+
+  Check status:
+    launchctl list | grep smbsearchers
+
+  Run manually right now:
+    launchctl start com.smbsearchers.nightly
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.smbsearchers.nightly.plist
+    rm ~/Library/LaunchAgents/com.smbsearchers.nightly.plist
+
+  Logs:
+    tail -f /Users/uc/Documents/smbsearchers/scraper/logs/nightly.log
+    tail -f /Users/uc/Documents/smbsearchers/scraper/logs/nightly_err.log
+-->
+<plist version="1.0">
+<dict>
+
+  <!-- Unique label for this job -->
+  <key>Label</key>
+  <string>com.smbsearchers.nightly</string>
+
+  <!-- Command to run: the existing nightly_scrape.sh wrapper -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/uc/Documents/smbsearchers/scraper/nightly_scrape.sh</string>
+  </array>
+
+  <!-- Schedule: 11:00 PM every night -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>23</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <!-- Run from the scraper directory -->
+  <key>WorkingDirectory</key>
+  <string>/Users/uc/Documents/smbsearchers/scraper</string>
+
+  <!-- Log stdout and stderr to separate files -->
+  <key>StandardOutPath</key>
+  <string>/Users/uc/Documents/smbsearchers/scraper/logs/nightly.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/uc/Documents/smbsearchers/scraper/logs/nightly_err.log</string>
+
+  <!-- If the machine was asleep at 11pm, run as soon as it wakes -->
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- Restart on failure (not on normal exit) -->
+  <key>KeepAlive</key>
+  <false/>
+
+  <!-- Give the job enough time to complete (4 hours max) -->
+  <key>TimeOut</key>
+  <integer>14400</integer>
+
+  <!-- Inherit current user environment (PATH, VENV, etc.) -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+    <key>HOME</key>
+    <string>/Users/uc</string>
+  </dict>
+
+</dict>
+</plist>

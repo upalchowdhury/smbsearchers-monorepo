@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  bi12_scrape.plist — macOS launchd job for 12-hour scraper cadence
+  ==================================================================
+  Install with:
+    bash /Users/uc/Documents/smbsearchers/scraper/install_launchd_12h.sh
+
+  Manual run after install:
+    launchctl start com.smbsearchers.bi12
+
+  Logs:
+    tail -f /Users/uc/Documents/smbsearchers/scraper/logs/bi12.log
+    tail -f /Users/uc/Documents/smbsearchers/scraper/logs/bi12_err.log
+-->
+<plist version="1.0">
+<dict>
+
+  <key>Label</key>
+  <string>com.smbsearchers.bi12</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/uc/Documents/smbsearchers/scraper/bi12_scrape.sh</string>
+  </array>
+
+  <!-- Schedule: every 12 hours at 00:00 and 12:00 local time -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key>
+      <integer>0</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+    <dict>
+      <key>Hour</key>
+      <integer>12</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+    </dict>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/uc/Documents/smbsearchers/scraper</string>
+
+  <key>StandardOutPath</key>
+  <string>/Users/uc/Documents/smbsearchers/scraper/logs/bi12.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/uc/Documents/smbsearchers/scraper/logs/bi12_err.log</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>KeepAlive</key>
+  <false/>
+
+  <!-- max runtime: 6 hours -->
+  <key>TimeOut</key>
+  <integer>21600</integer>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+    <key>HOME</key>
+    <string>/Users/uc</string>
+    <!-- Optional overrides -->
+    <key>SCRAPE_SOURCE</key>
+    <string>all</string>
+    <key>SCRAPE_MAX_PAGES</key>
+    <string>20</string>
+    <key>LOG_LEVEL</key>
+    <string>INFO</string>
+  </dict>
+
+</dict>
+</plist>
