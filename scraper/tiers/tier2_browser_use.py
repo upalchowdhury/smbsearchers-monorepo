@@ -97,7 +97,7 @@ def _make_browser():
     """Create a browser with stealth settings to defeat bot detection / Cloudflare."""
     from browser_use import Browser
     return Browser(
-        headless=False,
+        headless=settings.playwright_headless,
         args=[
             "--disable-blink-features=AutomationControlled",
             "--disable-dev-shm-usage",
@@ -153,7 +153,7 @@ class BrowserUseService:
 
             async with async_playwright() as pw:
                 browser = await pw.chromium.launch(
-                    headless=False,
+                    headless=settings.playwright_headless,
                     args=[
                         "--disable-blink-features=AutomationControlled",
                         "--disable-dev-shm-usage",
