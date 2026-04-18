@@ -65,15 +65,23 @@ async def ensure_source(conn: asyncpg.Connection, slug: str) -> str:
     name = _SOURCE_NAMES.get(slug, slug.title())
     base_url = _SOURCE_URLS.get(slug, "")
 
-    row = await conn.fetchrow("""
-        INSERT INTO "Source" (id, name, "baseUrl", "isActive", "createdAt", "updatedAt")
-        VALUES (
-            'c' || replace(gen_random_uuid()::text, '-', ''),
-            $1, $2, true, NOW(), NOW()
-        )
-        ON CONFLICT (name) DO UPDATE SET "updatedAt" = NOW()
-        RETURNING id
-    """, name, base_url)
+    try:
+        row = await conn.fetchrow("""
+            INSERT INTO "Source" (id, name, "baseUrl", "isActive", "createdAt", "updatedAt")
+            VALUES (
+                'c' || replace(gen_random_uuid()::text, '-', ''),
+                $1, $2, true, NOW(), NOW()
+            )
+            ON CONFLICT (name) DO UPDATE SET "updatedAt" = NOW()
+            RETURNING id
+        """, name, base_url)
+    except asyncpg.exceptions.UndefinedTableError as e:
+        raise RuntimeError(
+            "Database schema not initialized: missing Prisma tables (e.g. \"Source\"). "
+            "Run migrations on the SAME DATABASE_URL used by scraper: "
+            "`npm run db:migrate:deploy` then `npm run db:fts` from the web service. "
+            "Also verify scraper DATABASE_URL points to the same Postgres instance."
+        ) from e
     return row["id"]
 
 
